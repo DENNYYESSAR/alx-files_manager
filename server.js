@@ -1,6 +1,6 @@
 import express from 'express';
 import Redis from 'ioredis';
-import routes from './routes/index';
+import routes from './routes/index.js';
 
 const app = express();
 const port = process.env.PORT || 5000;
