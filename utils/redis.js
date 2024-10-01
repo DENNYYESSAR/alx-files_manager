@@ -34,7 +34,7 @@ class RedisClient {
      * @returns {Promise<string|null>} The value of the key, or null if not found.
      */
   async get(key) {
-    return await this.getAsync(key);
+    return this.getAsync(key);
   }
 
   /**
