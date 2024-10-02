@@ -1,63 +1,38 @@
-import sha1 from 'sha1';
-import { ObjectID } from 'mongodb';
-import Queue from 'bull';
-import dbClient from '../utils/db';
-import redisClient from '../utils/redis';
-
-const userQueue = new Queue('userQueue', 'redis://127.0.0.1:6379');
+import crypto from 'crypto'; // For SHA1 hashing
+import dbClient from '../utils/db.js';
 
 class UsersController {
-  static postNew (request, response) {
-    const { email } = request.body;
-    const { password } = request.body;
+  /**
+     * Creates a new user
+     */
+  static async postNew (req, res) {
+    const { email, password } = req.body;
 
+    // Check if email is missing
     if (!email) {
-      response.status(400).json({ error: 'Missing email' });
-      return;
+      return res.status(400).json({ error: 'Missing email' });
     }
+
+    // Check if password is missing
     if (!password) {
-      response.status(400).json({ error: 'Missing password' });
-      return;
+      return res.status(400).json({ error: 'Missing password' });
     }
 
-    const users = dbClient.db.collection('users');
-    users.findOne({ email }, (err, user) => {
-      if (user) {
-        response.status(400).json({ error: 'Already exist' });
-      } else {
-        const hashedPassword = sha1(password);
-        users.insertOne(
-          {
-            email,
-            password: hashedPassword
-          }
-        ).then((result) => {
-          response.status(201).json({ id: result.insertedId, email });
-          userQueue.add({ userId: result.insertedId });
-        }).catch((error) => console.log(error));
-      }
-    });
-  }
-
-  static async getMe (request, response) {
-    const token = request.header('X-Token');
-    const key = `auth_${token}`;
-    const userId = await redisClient.get(key);
-    if (userId) {
-      const users = dbClient.db.collection('users');
-      const idObject = new ObjectID(userId);
-      users.findOne({ _id: idObject }, (err, user) => {
-        if (user) {
-          response.status(200).json({ id: userId, email: user.email });
-        } else {
-          response.status(401).json({ error: 'Unauthorized' });
-        }
-      });
-    } else {
-      console.log('Hupatikani!');
-      response.status(401).json({ error: 'Unauthorized' });
+    // Check if the user already exists in the DB
+    const userExists = await dbClient.db.collection('users').findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ error: 'Already exist' });
     }
+
+    // Hash the password using SHA1
+    const hashedPassword = crypto.createHash('sha1').update(password).digest('hex');
+
+    // Insert new user into the database
+    const result = await dbClient.db.collection('users').insertOne({ email, password: hashedPassword });
+
+    // Return the new user with id and email
+    return res.status(201).json({ id: result.insertedId, email });
   }
 }
 
-module.exports = UsersController;
+export default UsersController;
