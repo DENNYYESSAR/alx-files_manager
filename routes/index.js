@@ -18,5 +18,8 @@ router.post('/files', FilesController.postUpload); // POST /files for uploading 
 // New endpoints for retrieving and listing files
 router.get('/files/:id', FilesController.getShow);  // GET /files/:id to retrieve a specific file
 router.get('/files', FilesController.getIndex);     // GET /files for listing all files with pagination
+router.put('/files/:id/publish', FilesController.putPublish);
+router.put('/files/:id/unpublish', FilesController.putUnpublish);
+router.get('/files/:id/data', FilesController.getFile);
 
 export default router;
