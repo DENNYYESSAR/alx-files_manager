@@ -9,7 +9,7 @@ import redisClient from '../utils/redis';
 const fileQueue = new Queue('fileQueue', 'redis://127.0.0.1:6379');
 
 class FilesController {
-  static async getUser(request) {
+  static async getUser (request) {
     const token = request.header('X-Token');
     const key = `auth_${token}`;
     const userId = await redisClient.get(key);
@@ -25,7 +25,7 @@ class FilesController {
     return null;
   }
 
-  static async postUpload(request, response) {
+  static async postUpload (request, response) {
     const user = await FilesController.getUser(request);
     if (!user) {
       return response.status(401).json({ error: 'Unauthorized' });
@@ -63,15 +63,15 @@ class FilesController {
           name,
           type,
           parentId: parentId || 0,
-          isPublic,
-        },
+          isPublic
+        }
       ).then((result) => response.status(201).json({
         id: result.insertedId,
         userId: user._id,
         name,
         type,
         isPublic,
-        parentId: parentId || 0,
+        parentId: parentId || 0
       })).catch((error) => {
         console.log(error);
       });
@@ -97,8 +97,8 @@ class FilesController {
           type,
           isPublic,
           parentId: parentId || 0,
-          localPath: fileName,
-        },
+          localPath: fileName
+        }
       ).then((result) => {
         response.status(201).json(
           {
@@ -107,15 +107,15 @@ class FilesController {
             name,
             type,
             isPublic,
-            parentId: parentId || 0,
-          },
+            parentId: parentId || 0
+          }
         );
         if (type === 'image') {
           fileQueue.add(
             {
               userId: user._id,
-              fileId: result.insertedId,
-            },
+              fileId: result.insertedId
+            }
           );
         }
       }).catch((error) => console.log(error));
@@ -123,7 +123,7 @@ class FilesController {
     return null;
   }
 
-  static async getShow(request, response) {
+  static async getShow (request, response) {
     const user = await FilesController.getUser(request);
     if (!user) {
       return response.status(401).json({ error: 'Unauthorized' });
@@ -138,14 +138,14 @@ class FilesController {
     return response.status(200).json(file);
   }
 
-  static async getIndex(request, response) {
+  static async getIndex (request, response) {
     const user = await FilesController.getUser(request);
     if (!user) {
       return response.status(401).json({ error: 'Unauthorized' });
     }
     const {
       parentId,
-      page,
+      page
     } = request.query;
     const pageNum = page || 0;
     const files = dbClient.db.collection('files');
@@ -162,16 +162,16 @@ class FilesController {
         {
           $facet: {
             metadata: [{ $count: 'total' }, { $addFields: { page: parseInt(pageNum, 10) } }],
-            data: [{ $skip: 20 * parseInt(pageNum, 10) }, { $limit: 20 }],
-          },
-        },
-      ],
+            data: [{ $skip: 20 * parseInt(pageNum, 10) }, { $limit: 20 }]
+          }
+        }
+      ]
     ).toArray((err, result) => {
       if (result) {
         const final = result[0].data.map((file) => {
           const tmpFile = {
             ...file,
-            id: file._id,
+            id: file._id
           };
           delete tmpFile._id;
           delete tmpFile.localPath;
@@ -186,7 +186,7 @@ class FilesController {
     return null;
   }
 
-  static async putPublish(request, response) {
+  static async putPublish (request, response) {
     const user = await FilesController.getUser(request);
     if (!user) {
       return response.status(401).json({ error: 'Unauthorized' });
@@ -205,7 +205,7 @@ class FilesController {
     return null;
   }
 
-  static async putUnpublish(request, response) {
+  static async putUnpublish (request, response) {
     const user = await FilesController.getUser(request);
     if (!user) {
       return response.status(401).json({ error: 'Unauthorized' });
@@ -224,7 +224,7 @@ class FilesController {
     return null;
   }
 
-  static async getFile(request, response) {
+  static async getFile (request, response) {
     const { id } = request.params;
     const files = dbClient.db.collection('files');
     const idObject = new ObjectID(id);
