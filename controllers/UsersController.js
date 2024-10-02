@@ -1,5 +1,5 @@
-import crypto from 'crypto'; // For SHA1 hashing
-import dbClient from '../utils/db.js';
+import redisClient from '../utils/redis';
+import dbClient from '../utils/db';
 
 class UsersController {
   /**
@@ -32,6 +32,29 @@ class UsersController {
 
     // Return the new user with id and email
     return res.status(201).json({ id: result.insertedId, email });
+  }
+
+  /**
+   * Retrieve the user information based on the token.
+   */
+  static async getMe (req, res) {
+    const token = req.headers['x-token'];
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const userId = await redisClient.get(`auth_${token}`);
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Retrieve the user by ID
+    const user = await dbClient.db.collection('users').findOne({ _id: dbClient.getObjectId(userId) });
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    return res.status(200).json({ id: user._id, email: user.email });
   }
 }
 
