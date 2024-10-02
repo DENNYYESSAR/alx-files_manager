@@ -163,6 +163,93 @@ class FilesController {
       return res.status(500).json({ error: 'Error fetching files' });
     }
   }
+  /**
+   * PUT /files/:id/publish
+   * Set the isPublic field to true for a file document based on the ID.
+   */
+  static async putPublish(req, res) {
+    const token = req.headers['x-token'];
+    const fileId = req.params.id;
+
+    // Retrieve the user from Redis using the token
+    const userId = await redisClient.get(`auth_${token}`);
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Find the file document in the database
+    let fileDocument;
+    try {
+      fileDocument = await dbClient.db.collection('files').findOne({
+        _id: new ObjectId(fileId),
+        userId,
+      });
+    } catch (error) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    if (!fileDocument) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    // Update the file to be public
+    try {
+      await dbClient.db.collection('files').updateOne(
+        { _id: new ObjectId(fileId), userId },
+        { $set: { isPublic: true } }
+      );
+
+      // Retrieve the updated file document
+      const updatedFile = await dbClient.db.collection('files').findOne({ _id: new ObjectId(fileId), userId });
+      return res.status(200).json(updatedFile);
+    } catch (error) {
+      return res.status(500).json({ error: 'Error updating file' });
+    }
+  }
+
+  /**
+   * PUT /files/:id/unpublish
+   * Set the isPublic field to false for a file document based on the ID.
+   */
+  static async putUnpublish(req, res) {
+    const token = req.headers['x-token'];
+    const fileId = req.params.id;
+
+    // Retrieve the user from Redis using the token
+    const userId = await redisClient.get(`auth_${token}`);
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Find the file document in the database
+    let fileDocument;
+    try {
+      fileDocument = await dbClient.db.collection('files').findOne({
+        _id: new ObjectId(fileId),
+        userId,
+      });
+    } catch (error) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    if (!fileDocument) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    // Update the file to be private
+    try {
+      await dbClient.db.collection('files').updateOne(
+        { _id: new ObjectId(fileId), userId },
+        { $set: { isPublic: false } }
+      );
+
+      // Retrieve the updated file document
+      const updatedFile = await dbClient.db.collection('files').findOne({ _id: new ObjectId(fileId), userId });
+      return res.status(200).json(updatedFile);
+    } catch (error) {
+      return res.status(500).json({ error: 'Error updating file' });
+    }
+  }
 }
 
 export default FilesController;
