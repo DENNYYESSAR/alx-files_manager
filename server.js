@@ -8,6 +8,8 @@ const port = process.env.PORT || 5000;
 // Initialize Redis client
 const redisClient = new Redis();
 
+app.use(express.json()); // Middleware to parse JSON
+
 // Middleware to check Redis health
 app.use((req, res, next) => {
   redisClient.ping((err, result) => {
